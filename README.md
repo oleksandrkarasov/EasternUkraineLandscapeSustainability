@@ -1,4 +1,6 @@
 # This repository contains code scripts used for analysis during preparation of the manuscript "Impact of the full-scale Russian invasion on landscape sustainability in Eastern Ukraine: Insights from the Earth observation foundation model and social media"
+Check 'Presences and pseudoabsences preparation.ipynb' to follow the process of presences selection and pseudo-absences generation for a subsequent modelling in Google Earth Engine.
+
 Use the following Google Earth Engine link to reproduce Random Forest modelling procedure (Figure 5) with mocked presence points: https://code.earthengine.google.com/7c057c7ba6682650ccfa447315633443 
 
 
