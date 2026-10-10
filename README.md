@@ -106,13 +106,13 @@ change-detection number of the Results and SI in one table
 and `raster_area_check.csv` (areas recomputed from the GeoTIFFs against the
 tables) → `outputs/Supplementary_figures/`.
 
-Figures 1–4 of the paper are drawn by hand; the map layouts of Figures 2 and
-5–7 were composed in a GIS from the GeoTIFFs of steps 6 and 8 (Figure 2 uses
-the Dynamic World land-cover product, loaded directly in the GIS).
+Figures 1, 3, and 4 of the paper are prepared manually; the map layouts of Figures 2 and
+5–7 were composed in QGIS from the GeoTIFFs of steps 6 and 8 (Figure 2 uses
+the Dynamic World land-cover product, loaded directly in QGIS).
 
 ## How the training points were made (not needed to run the pipeline)
 
-`Python_A1_prepare_presences_and_backgrounds.py` turned the Flickr, Twitter and
+`Python_A1_prepare_presences_and_backgrounds.py` turned the Flickr, Twitter, and
 VKontakte records into presences and pseudo-absences (Methods "Social media
 data"; Table S1; Figures S1–S3); `Python_A2`/`A3` built the accessibility-matched
 samples (Text S1). They document the preprocessing but cannot be run without
