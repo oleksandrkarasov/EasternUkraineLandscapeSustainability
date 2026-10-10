@@ -1,5 +1,5 @@
-# Code for "War-related anomalies in outdoor visitation propensity in Eastern Ukraine"
-### Sustainability Science, manuscript SUST-D-26-00527
+# Code for "War-related anomalies in outdoor visitation propensity in Eastern Ukraine: insights from an Earth observation foundation model and social media"
+### Submitted to Sustainability Science
 
 This package lets you run the complete analysis of the paper — Random Forest
 models of outdoor visitation propensity on AlphaEarth satellite embeddings,
@@ -8,10 +8,9 @@ change detection against pre-war variability, and the comparison with
 documented war events — on **synthetic training points** that stand in for the
 social-media records, which cannot be shared (Ethics statement of the paper).
 Every output file, table and band keeps the name used in the Supplementary
-materials (Tables S3–S4), so you can follow the paper's SI while you run it.
-Because the training points are synthetic, **the numbers you obtain are not
-those of the paper**; the pipeline, its intermediate products and the shape of
-every table and figure are.
+materials (Tables S3–S4), so you can follow the paper's supplementary materials
+while you run it. Because the training points are synthetic, **the numbers you 
+obtain are not those of the paper**.
 
 The analysis alternates between Google Earth Engine (folder `GEE/`, run in the
 Code Editor) and Python (run from this folder). Allow a working day for a full
@@ -44,22 +43,23 @@ with your own project (the same value sits in `support/folders.py`).
 writes `data/war_events4326.gpkg` (events 2022–2024 inside the study area, with
 `source` = ACLED / VIINA and `date`) and `data/ESA_WorldCover_2021_Ukraine_AOI.tif`.
 
-**2. Upload 13 table assets to Earth Engine** (Assets → New → Shape files),
-each with the asset name equal to the file name without `.zip`/`.gpkg`:
+**1b. Convert the GeoPackages.** Earth Engine takes zipped shapefiles, not
+GeoPackages: `python Python_gpkg_to_gee_zip.py` writes `SUSTD_aoi.zip`,
+`SUSTD_ordlo.zip` and `SUSTD_war_events.zip` into `data/upload_to_GEE/`.
+
+**2. Upload 13 table assets to Earth Engine** (Assets → New → Shape files;
+select the ZIP), each with the asset name equal to the file name without `.zip`:
 
 | File | Asset name | Read by |
 |---|---|---|
-| `data/aoi.gpkg` | `SUSTD_aoi` | all GEE scripts |
-| `data/ordlo.gpkg` | `SUSTD_ordlo` | GEE_05 |
-| `data/war_events4326.gpkg` (from step 1) | `SUSTD_war_events` | GEE_05 |
+| `data/upload_to_GEE/SUSTD_aoi.zip` | `SUSTD_aoi` | all GEE scripts |
+| `data/upload_to_GEE/SUSTD_ordlo.zip` | `SUSTD_ordlo` | GEE_05 |
+| `data/upload_to_GEE/SUSTD_war_events.zip` (from step 1) | `SUSTD_war_events` | GEE_05 |
 | `data/mock_points/SUSTD_points_regular_presence.zip`, `..._pseudoabsence.zip` | same as file | GEE_02 (main model) |
 | `..._points_full_presence/pseudoabsence.zip` | same | GEE_02 (2015–2021 sensitivity) |
 | `..._points_recurrent_presence/pseudoabsence.zip` | same | GEE_02 (recurrent-visitation model) |
 | `..._points_regular_matched_presence/pseudoabsence.zip` | same | GEE_02 (accessibility-matched) |
 | `..._points_recurrent_matched_presence/pseudoabsence.zip` | same | GEE_02 (accessibility-matched, recurrent) |
-
-(GeoPackages can be uploaded after conversion to zipped shapefiles, e.g. with
-QGIS or `ogr2ogr -f "ESRI Shapefile"`.)
 
 **3. `GEE/GEE_01_create_embedding_composites.js`** — six tasks; writes the
 annual AlphaEarth embeddings 2019–2024 on the 500 m EPSG:3035 grid as assets
@@ -116,8 +116,9 @@ the Dynamic World land-cover product, loaded directly in the GIS).
 VKontakte records into presences and pseudo-absences (Methods "Social media
 data"; Table S1; Figures S1–S3); `Python_A2`/`A3` built the accessibility-matched
 samples (Text S1). They document the preprocessing but cannot be run without
-the records. `Python_A0_make_mock_training_points.py` produced the synthetic
-tables in `data/mock_points/`: locations drawn from a propensity surface built
+the records. `Python_A0_make_mock_training_points.py` produced the ten synthetic
+tables in `data/mock_points/` (it calls `Python_A3` and `Python_A2` for the four
+accessibility-matched ones): locations drawn from a propensity surface built
 only from public covariates (land-cover class, distance to infrastructure) and
 a random spatial field, then processed with the same thinning, pseudo-absence
 and matching rules as the real data; no post, user or date enters them.
