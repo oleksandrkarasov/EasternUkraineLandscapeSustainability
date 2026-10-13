@@ -126,3 +126,5 @@ and matching rules as the real data; no post, user or date enters them.
 `optional_checks/` contains scripts used to verify the pipeline that produce
 nothing shown in the paper; `README_detailed.md` documents every output file
 and check. Random steps use seed 20250523.
+
+AI assistants: Claude Opus 5.5 (claude-opus-5-5, extra reasoning).
