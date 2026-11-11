@@ -16,7 +16,7 @@ sys.modules.pop("folders", None)
 sys.path.insert(0, str(_PKG / "support"))
 import folders  # noqa: E402
 
-SHIPPED = ["SUSTD_aoi.zip", "SUSTD_ordlo.zip", "h3_hexagons_res6.gpkg"]
+SHIPPED = [folders.AOI, folders.ORDLO, folders.HEXAGON_GRID]
 PREPARED = ["ESA_WorldCover_2021_Ukraine_AOI.tif", "war_events4326.gpkg"]
 TABLES = [folders.ASSET_PREFIX + n + ".zip" for n in folders.TABLES.values()]
 
@@ -26,8 +26,8 @@ def main():
         d.mkdir(parents=True, exist_ok=True)
     print(f"Package folder: {folders.ROOT}\n")
     print("Shipped inputs (data/):")
-    for n in SHIPPED:
-        print(f"  [{'x' if (folders.DATA / n).exists() else ' '}] {n}")
+    for p in SHIPPED:
+        print(f"  [{'x' if p.exists() else ' '}] {p.relative_to(folders.DATA).as_posix()}")
     print("Inputs to prepare with Python_prepare_inputs.py (data/):")
     for n in PREPARED:
         print(f"  [{'x' if (folders.DATA / n).exists() else ' '}] {n}")
