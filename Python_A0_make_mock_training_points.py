@@ -254,7 +254,7 @@ def main():
     upload_dir = folders.MOCK_POINTS                  # shipped with the code
     upload_dir.mkdir(parents=True, exist_ok=True)
     # inputs default to the standard file names in data/ when not given
-    defaults = {"aoi": ("aoi.gpkg", "SUSTD_aoi.zip"), "ordlo": ("ordlo.gpkg", "SUSTD_ordlo.zip"),
+    defaults = {"aoi": ("aoi.gpkg", "upload_to_GEE/SUSTD_aoi.zip"), "ordlo": ("ordlo.gpkg", "upload_to_GEE/SUSTD_ordlo.zip"),
                 "esa": ("ESA_WorldCover_2021_Ukraine_AOI.tif",), "ndvi": ("Summer_NDVI_Median_2019_2021.tif",)}
     for key, names in defaults.items():
         for name in names:
