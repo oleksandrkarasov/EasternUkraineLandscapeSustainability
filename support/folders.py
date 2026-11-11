@@ -2,8 +2,9 @@
 only place to change them. All folders are inside the package folder
 (override with the environment variable VP_ROOT):
 
-    data/                 shipped inputs (SUSTD_aoi.zip, SUSTD_ordlo.zip, h3_hexagons_res6.gpkg,
-                          mock_points/) + the files prepared by Python_prepare_inputs.py
+    data/                 shipped inputs (upload_to_GEE/SUSTD_aoi.zip, upload_to_GEE/SUSTD_ordlo.zip,
+                          h3_hexagons_res6.gpkg, mock_points/) + the files that the user prepares
+                          with Python_prepare_inputs.py (war events, WorldCover)
     work/                 working files of Python_A0/A1-A3 (not needed to run the pipeline)
     outputs/
         A1_upload_to_GEE/, A2_upload_to_GEE/, A3_upload_to_GEE/   Python_A0/A1-A3 (authors' use)
@@ -57,13 +58,15 @@ HEXAGONS = {"primary_effort": OUTPUTS / "Python02_hexagons_regular",
 PYTHON03 = OUTPUTS / "Python03_manuscript_numbers"
 FIGURES = OUTPUTS / "Supplementary_figures"
 
-# Shipped inputs (data/): study area and pre-2022 occupation area as zipped
-# shapefiles (ready to upload to Earth Engine), hexagon grid, mocked point tables.
-AOI = DATA / "SUSTD_aoi.zip"
-ORDLO = DATA / "SUSTD_ordlo.zip"
+# Shipped inputs: study area and pre-2022 occupation area as zipped shapefiles
+# in data/upload_to_GEE/ (ready to upload to Earth Engine), hexagon grid and
+# mocked point tables in data/.
+AOI = DATA / "upload_to_GEE" / "SUSTD_aoi.zip"
+ORDLO = DATA / "upload_to_GEE" / "SUSTD_ordlo.zip"
 HEXAGON_GRID = DATA / "h3_hexagons_res6.gpkg"
 MOCK_POINTS = DATA / "mock_points"
-# Built by Python_prepare_inputs.py from files the user downloads.
+# Not shipped. Built by Python_prepare_inputs.py from files that the user
+# downloads (ACLED and VIINA war events, ESA WorldCover tiles).
 WORLDCOVER = DATA / "ESA_WorldCover_2021_Ukraine_AOI.tif"
 WAR_EVENTS = DATA / "war_events4326.gpkg"
 WAR_EVENTS_ZIP = DATA / "upload_to_GEE" / "SUSTD_war_events.zip"
