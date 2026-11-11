@@ -30,11 +30,11 @@ Matching rules
    than 65% of outdoor presences remain, rather than silently exporting an
    unbalanced or narrowly selected sensitivity set.
 
-The 65% common-support retention gate was fixed at the design stage, before
-any SDM fitting or outcome evaluation. It replaces an initial 70% diagnostic
-gate that missed by 1.1 percentage points although all candidate designs had
-excellent covariate balance. This decision and its reason are written to the
-metadata and attempts tables; it must be reported transparently.
+The 65% retention limit was fixed at the design stage, before any model was
+fitted or evaluated. It replaces an initial limit of 70%, which no candidate
+design reached although all of them had good covariate balance. The decision
+and its reason are written to the metadata and attempts tables and are
+reported in Text S1 of the Supplementary materials.
 
 The output includes a GeoPackage for archiving, a zipped Shapefile for direct
 Google Earth Engine upload, a field crosswalk, and balance diagnostics.
