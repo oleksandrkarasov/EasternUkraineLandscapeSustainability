@@ -4,12 +4,15 @@
     python Python_prepare_inputs.py --acled acled_export.csv --viina events_latest.csv
                                     --worldcover tile1.tif tile2.tif ...
 
-1. data/war_events4326.gpkg  from an ACLED export (CSV or XLSX; its data licence
-   does not allow redistribution) and the VIINA event file
-   (https://github.com/zhukovyuri/VIINA). Both are restricted to the study area
-   (data/SUSTD_aoi.zip) and to 2022-2024. Columns: 'source' (ACLED / VIINA), 'date',
-   point geometry (EPSG:4326). The same events are also written as the zipped
-   shapefile data/upload_to_GEE/SUSTD_war_events.zip for upload to Earth Engine.
+1. data/war_events4326.gpkg  from an ACLED export for Ukraine (CSV or XLSX;
+   https://acleddata.com/monitor/ukraine-conflict-monitor; its data licence does
+   not allow redistribution) and the VIINA event table (CSV;
+   https://github.com/zhukovyuri/VIINA). Each input is one table with longitude,
+   latitude and date columns. Both are restricted to the study area
+   (data/upload_to_GEE/SUSTD_aoi.zip) and to 2022-2024. Columns written: 'source'
+   (ACLED / VIINA), 'date' (YYYY-MM-DD), point geometry (EPSG:4326). The same
+   events are also written as the zipped shapefile
+   data/upload_to_GEE/SUSTD_war_events.zip for upload to Earth Engine.
 2. data/ESA_WorldCover_2021_Ukraine_AOI.tif  from the ESA WorldCover 2021 v200
    tiles covering the study area (https://esa-worldcover.org/en/data-access;
    tiles N45E036, N45E039, N48E036, N48E039), mosaicked and clipped to the AOI.
