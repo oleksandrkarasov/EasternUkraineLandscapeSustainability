@@ -13,8 +13,7 @@
  Figure S7  Annual z-scores of the regular-visitation model, 2022, 2023, 2024
             against the 2019-2021 median (GEE_05 annual GeoTIFFs, band 3)
  Figure S8  Pixels whose embeddings were outside the range of the training
-            data in at least one year 2019-2024 (extrapolation check,
-            Reviewer 3 comment 10),
+            data in at least one year 2019-2024 (extrapolation check),
             with the loss anomalies of the median comparison and the 2022 gain
             anomalies, both models (GEE_05 main GeoTIFF bands 7 and 25; annual
             GeoTIFF of 2022, band 3)
