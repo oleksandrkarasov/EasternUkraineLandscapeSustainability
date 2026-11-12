@@ -9,7 +9,8 @@
    not allow redistribution) and the VIINA event table (CSV;
    https://github.com/zhukovyuri/VIINA). Each input is one table with longitude,
    latitude and date columns. Both are restricted to the study area
-   (data/upload_to_GEE/SUSTD_aoi.zip) and to 2022-2024. Columns written: 'source'
+   (data/upload_to_GEE/SUSTD_aoi.zip) and to the period from 24 February 2022 to
+   the end of 2024. Columns written: 'source'
    (ACLED / VIINA), 'date' (YYYY-MM-DD), point geometry (EPSG:4326). The same
    events are also written as the zipped shapefile
    data/upload_to_GEE/SUSTD_war_events.zip for upload to Earth Engine.
@@ -33,7 +34,8 @@ sys.modules.pop("folders", None)
 sys.path.insert(0, str(_PKG / "support"))
 import folders  # noqa: E402
 
-YEARS = (2022, 2023, 2024)
+START_DATE = "2022-02-24"   # first day of the full-scale invasion
+END_DATE = "2024-12-31"
 
 
 def read_events(path, source):
@@ -53,7 +55,7 @@ def read_events(path, source):
                         "date": parsed.dt.strftime("%Y-%m-%d"),
                         "lon": pd.to_numeric(df[lon], errors="coerce"),
                         "lat": pd.to_numeric(df[lat], errors="coerce")}).dropna()
-    out = out[pd.to_datetime(out["date"]).dt.year.isin(YEARS)]
+    out = out[(out["date"] >= START_DATE) & (out["date"] <= END_DATE)]   # ISO dates compare as text
     return gpd.GeoDataFrame(out[["source", "date"]], geometry=gpd.points_from_xy(out.lon, out.lat), crs="EPSG:4326")
 
 
@@ -107,7 +109,7 @@ def build_worldcover(tiles, aoi_path, out_path):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--acled", type=Path, help="ACLED export (CSV/XLSX) for Ukraine, 2022-2024")
+    ap.add_argument("--acled", type=Path, help="ACLED export (CSV/XLSX) for Ukraine, 24 February 2022 to 2024")
     ap.add_argument("--viina", type=Path, help="VIINA events file (CSV)")
     ap.add_argument("--worldcover", type=Path, nargs="*", help="ESA WorldCover 2021 tiles (GeoTIFF)")
     args = ap.parse_args()
