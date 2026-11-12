@@ -22,7 +22,7 @@ run; the Earth Engine exports (steps 3–6 and 8) take most of it.
   and about 2 GB of asset storage.
 - Python 3.10 or newer: `pip install -r requirements.txt`.
 - Inputs that we cannot ship and that you prepare yourself (step 1):
-  - the war events of 2022–2024 from two open sources: ACLED
+  - the war events from 24 February 2022 to the end of 2024 from two open sources: ACLED
     (https://acleddata.com/monitor/ukraine-conflict-monitor; free registration;
     the licence does not allow redistribution) and VIINA
     (https://github.com/zhukovyuri/VIINA);
@@ -48,7 +48,8 @@ years 2022–2024 into one file first). Then run
 
 `python Python_prepare_inputs.py --acled <acled.csv> --viina <viina.csv> --worldcover <tile1.tif> <tile2.tif> ...`
 
-The script keeps the events of 2022–2024 inside the study area and writes
+The script keeps the events from 24 February 2022 to the end of 2024 inside the
+study area and writes
 three files:
 
 - `data/war_events4326.gpkg`: points (EPSG:4326) with the attributes `source`
