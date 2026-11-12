@@ -8,17 +8,13 @@
  Manuscript SUST-D-26-00527 (Sustainability Science)
 =============================================================================
 
- WHAT CHANGED IN THIS VERSION AND WHY
- ------------------------------------
- Reviewer numbering follows the decision letter (R3 = detailed methodological
- review, R2 = page-by-page review).
-
+ SIGN CONVENTION
+ ---------------
      This version computes MAGNITUDE columns for all four intensity metrics,
      so that in every cell of Figure 8 a larger value means more of the change
      type named in the column, and a positive rho always means "more war events
      co-occur with more of that change". Both conventions are exported, and
-     sign_convention_check.csv shows the two side by side so the change can be
-     documented in the response letter. Every correlation row also carries a
+     sign_convention_check.csv shows the two side by side. Every correlation row also carries a
      plain-language 'interpretation' string.
 
  COMBINED DATASETS. A combined
@@ -87,9 +83,9 @@ Z_NODATA    = -9999.0
 
 MIN_N = 30
 
-# ---- Reviewer-driven switches -----------------------------------------------
+# ---- Analysis switches -------------------------------------------------------
 
-# 'raw' reproduces the submitted Figure 8 exactly, for the response letter.
+# 'raw' keeps the sign of the z-scores, as in the first submission.
 SIGN_CONVENTION = 'magnitude'
 
 # detections. GEE_05 uses ACLED only to show that spatial control areas are
@@ -97,7 +93,7 @@ SIGN_CONVENTION = 'magnitude'
 FEASIBILITY_CHECK_SOURCE = 'ACLED'
 HEADLINE_SOURCE          = 'VIINA'
 
-# [R2 p.20] Combine the two sources, removing events reported by both.
+# Combine the two sources, removing events reported by both.
 DEDUP_COMBINED     = True
 DEDUP_TOLERANCE_M  = 1000      # events closer than this, same date, count once
 
@@ -330,7 +326,7 @@ def normalise_source(value):
 
 def dedup_events(events, source_col):
     """
-    [R2 p.20] The same incident reported by both ACLED and VIINA is two rows in
+    The same incident reported by both ACLED and VIINA is two rows in
     a naive concatenation. Events from different sources within
     DEDUP_TOLERANCE_M of each other on the same date are collapsed to one.
     Without a date column the tolerance is applied on location alone, which is
@@ -766,7 +762,7 @@ def run_scheme():
     print(check.to_string(index=False, float_format=lambda v: f"{v:+.3f}"))
 
     # ---- 9. Reporting summary ----
-    print("\n[9] Headline numbers for the abstract and the response letter...")
+    print("\n[9] Headline numbers for the abstract...")
     val = corr_df[(corr_df['event_source'] == HEADLINE_SOURCE) &
                   (corr_df['subset'] == 'z_active') &
                   (corr_df['stratum'] == 'All')]
