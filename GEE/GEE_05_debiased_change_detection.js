@@ -26,15 +26,14 @@
  *   war_events    uploaded from data/upload_to_GEE/SUSTD_war_events.zip. This
  *                 file is not shipped: prepare it from ACLED and VIINA
  *                 (README, step 1). Point features with the property
- *                 'source' = 'ACLED' or 'VIINA'.
+ *                 'source' = 'ACLED' or 'VIINA'. This script uses only the
+ *                 ACLED events.
  *
  * ROLE OF THE WAR EVENTS IN THIS SCRIPT
  * No event data enter the z-scores, the thresholds or the anomaly maps. The
- * events are used here for two things only: (a) ACLED events show that no
- * part of the study area is far enough from documented events to serve as a
- * control area (ControlZones_* exports); (b) distance-to-event diagnostics
- * are exported but not reported in the paper (bands 13-14 and 19-20 of the
- * main GeoTIFF, the '*_near_war_km2' columns, Areas_vs_AttributionDistance).
+ * ACLED events are used here for one thing only: to show that no part of the
+ * study area is far enough from documented events to serve as a control area
+ * (ControlZones_* exports). No anomaly is linked to events by distance.
  * The comparison with events for RQ3 is made afterwards in
  * support/Python_correlations_with_events.py.
  *
@@ -88,7 +87,6 @@ var MIN_PATCH_PX     = 8;
 var MAX_WAR_SD       = 0.10;
 var PROB_LO          = 0.05;
 var PROB_HI          = 0.95;
-var ATTRIBUTION_DIST_KM = 30;
 var DEN_CLAMP_FRAC   = 0.10;
 var MIN_LOCAL_SD     = 0.02;  // floor of the unadjusted reference SD
 var APPLY_CLOSING    = true;  // one-pixel closing in the stricter version
@@ -204,11 +202,9 @@ var CONTROL_DIST_LIST     = [30, 50, 75];  // sensitivity over the control set
 
 // The war_events asset must carry a property that names the source of each
 // event. If it does not, set SOURCE_PROPERTY to null; the script then uses all
-// events for both purposes below and prints a warning.
+// events for the control-area check and prints a warning.
 var SOURCE_PROPERTY = 'source';   // e.g. 'ACLED' / 'VIINA'; set to null if absent
 var CONTROL_SOURCE  = 'ACLED';  // control-area feasibility check only; no role in z or maps
-var VALID_SOURCE    = 'VIINA';  // comparison source for the exported distance diagnostic (band 20);
-                                  // both sources are comparison data, not validation (see header)
 
 var APPLY_GLOBAL_RECAL = false;  // main analysis: test the null; do not force mean=0, SD=1
 var THRESHOLD_MODE     = 'normal';   // 'normal' | 'empirical'
@@ -225,7 +221,6 @@ var NOVELTY_FLAG_BAND = 'extrapolation_flag_annual';
 var BIAS_SIGMA_LIST = [50000, 100000, 200000];
 var Z_THRESH_LIST   = [2.5, 3.0, 3.5, 4.0];
 var MIN_PATCH_LIST  = [4, 8, 16];
-var ATTRIBUTION_DIST_LIST = [15, 30, 50];
 
 // ---- Run flags ---------------------------------------------------------
 var RUN = {
@@ -500,7 +495,6 @@ if (RUN.mainOutputs) {
     ['neighbourhood_3x3_width', refScale * 3, 'm', 'linear'],
     ['smoothing_sigma', SMOOTH_SIGMA_M, 'm', 'linear'],
     ['bias_variance_sigma', BIAS_SIGMA_M, 'm', 'linear'],
-    ['attribution_radius', ATTRIBUTION_DIST_KM, 'km', 'linear'],
     ['control_zone_minimum_distance', CONTROL_MIN_DIST_KM, 'km', 'linear'],
     ['distance_transform_cap', DISTANCE_CAP_KM, 'km', 'linear'],
     ['minimum_patch_area_' + MIN_PATCH_PX + '_cells',
@@ -553,34 +547,26 @@ if (RUN.mainOutputs) {
 }
 
 // =====================================================================
-// 2. WAR EVENTS (control-area check and unreported distance diagnostics only;
-//    see the header)
+// 2. WAR EVENTS (control-area check only; see the header)
 // =====================================================================
 
 var warAll = ee.FeatureCollection(warEventsAsset).filterBounds(roi);
-var warControl, warValid;
+var warControl;
 
 if (SOURCE_PROPERTY) {
   warControl = warAll.filter(ee.Filter.eq(SOURCE_PROPERTY, CONTROL_SOURCE));
-  warValid   = warAll.filter(ee.Filter.eq(SOURCE_PROPERTY, VALID_SOURCE));
 } else {
-  print('WARNING: SOURCE_PROPERTY is null. Control zones, the confidence index '
-      + 'and the comparison with events all use the same merged event set, so '
-      + 'the comparison is not independent. Split the asset to fix this.');
+  print('WARNING: SOURCE_PROPERTY is null. The control-area check uses all '
+      + 'events of the asset, whatever their source.');
   warControl = warAll;
-  warValid   = warAll;
 }
 print('Control-role events:', warControl.size());
-print('Comparison events (VALID_SOURCE):', warValid.size());
 
-// Fail early if the source labels do not match the event asset. Otherwise an
+// Fail early if the source label does not match the event asset. Otherwise an
 // empty collection would generate a superficially plausible all-far raster.
 if (SOURCE_PROPERTY) {
   if (warControl.size().getInfo() === 0) {
     throw new Error('No control-role events found. Check SOURCE_PROPERTY and CONTROL_SOURCE.');
-  }
-  if (warValid.size().getInfo() === 0) {
-    throw new Error('No comparison events found. Check SOURCE_PROPERTY and VALID_SOURCE.');
   }
 }
 
@@ -599,22 +585,19 @@ function distanceKmTo(fc) {
     .sqrt().reproject(refProj).multiply(refScale / 1000);
   // fastDistanceTransform only searches within the specified neighbourhood.
   // Anything still masked is farther than the cap, which is sufficient for
-  // all attribution and control-zone thresholds in this script.
+  // the control-area threshold in this script.
   return distanceKm.unmask(DISTANCE_CAP_KM);
 }
 
 var distControlKm = distanceKmTo(warControl).rename('dist_control_km');
 // Sanity check: if the transform is working, the maximum distance to a control
-// event must be far greater than ATTRIBUTION_DIST_KM. A value near zero or near
-// 1 km means the transform silently failed and the attribution mask is passing
-// everything, which is the failure this pipeline has already had twice.
+// event is tens of kilometres. A value near zero or near 1 km means that the
+// transform silently failed.
 var distControlStats = distControlKm.reduceRegion({
   reducer: ee.Reducer.minMax(), geometry: roi, scale: coarseScale,
   maxPixels: 1e9, bestEffort: true
 });
-print('Control-event distance min/max (km); max must be >> '
-      + ATTRIBUTION_DIST_KM + ':', distControlStats);
-var distValidKm   = distanceKmTo(warValid).rename('dist_valid_km');
+print('Control-event distance min/max (km):', distControlStats);
 
 // =====================================================================
 // 3. CHECK FOR EVENT-FREE CONTROL AREAS (none exist; exported as documentation)
@@ -663,9 +646,6 @@ if (RUN.controlZoneExport) {
       CONTROL_MIN_DIST_KM, 'linear', GROUND_FACTOR_CENTROID),
     'min_dist_ground_north_km': groundEquivalent(
       CONTROL_MIN_DIST_KM, 'linear', GROUND_FACTOR_NORTH),
-    'attribution_projected_km': ATTRIBUTION_DIST_KM,
-    'attribution_ground_centroid_km': groundEquivalent(
-      ATTRIBUTION_DIST_KM, 'linear', GROUND_FACTOR_CENTROID),
     'exclude_ordlo': CONTROL_EXCLUDE_ORDLO ? 1 : 0,
     'control_source': SOURCE_PROPERTY ? CONTROL_SOURCE : 'merged',
     'n_control_role_events': warControl.size(),
@@ -686,11 +666,6 @@ if (RUN.controlZoneExport) {
     'distance_max_ground_centroid_approx_km': groundEquivalent(
       distControlStats.get('dist_control_km_max'),
       'linear', GROUND_FACTOR_CENTROID),
-    'n_pixels_within_attribution_distance': pixelCount(
-      distControlKm.lte(ATTRIBUTION_DIST_KM).and(aoi_mask)),
-    'fraction_within_attribution_distance': pixelCount(
-      distControlKm.lte(ATTRIBUTION_DIST_KM).and(aoi_mask))
-      .divide(ELIGIBLE_PIXEL_COUNT),
     'n_pixels_beyond_control_distance': pixelCount(
       distControlKm.gte(CONTROL_MIN_DIST_KM).and(aoi_mask)),
     'fraction_beyond_control_distance': pixelCount(
@@ -715,7 +690,7 @@ if (RUN.controlZoneExport) {
 }
 
 // =====================================================================
-// 4. HELPERS: NORMALISED CONVOLUTION AND GLOBAL RENORMALISATION
+// 4. HELPERS: NORMALISED CONVOLUTION
 // =====================================================================
 
 function clampedNormConv(values, mask, sigmaM) {
@@ -743,19 +718,6 @@ function clampedNormConv(values, mask, sigmaM) {
 
   return num.divide(den.max(denMax.multiply(DEN_CLAMP_FRAC)))
     .resample('bilinear').reproject(refProj);
-}
-
-function globalZNorm(zImage, ctrlMask, bandName) {
-  // Kept for reference and not called: the optional rescaling
-  // (APPLY_GLOBAL_RECAL, off in the paper) uses the mean and SD of the pre-war
-  // z-scores instead.
-  var stats = zImage.updateMask(ctrlMask).reduceRegion({
-    reducer: ee.Reducer.mean().combine(ee.Reducer.stdDev(), '', true),
-    geometry: roi, scale: coarseScale, maxPixels: 1e9, bestEffort: true
-  });
-  var mu = ee.Number(stats.get(ee.String(bandName).cat('_mean')));
-  var sd = ee.Number(stats.get(ee.String(bandName).cat('_stdDev'))).max(0.5);
-  return zImage.subtract(mu).divide(sd);
 }
 
 // =====================================================================
@@ -1051,7 +1013,7 @@ var damageYear = selectedAnnualDetection.damage;
 var rewildYear = selectedAnnualDetection.rewild;
 
 // =====================================================================
-// 7. PERSISTENCE, ATTRIBUTION AND YEAR COUNTS
+// 7. PERSISTENCE AND YEAR COUNTS
 // =====================================================================
 
 function persistenceFromAnnualDetections(detection, suffix) {
@@ -1088,20 +1050,6 @@ var rewildPersistCount = selectedPersistence.rewildCount
   .rename('rew_persist_count');
 var damagePersist = selectedPersistence.damage.rename('damage_persist');
 var rewildPersist = selectedPersistence.rewild.rename('rewild_persist');
-
-// Distance-to-event diagnostic (exported, not reported in the paper): loss
-// and gain anomalies of the stricter version within ATTRIBUTION_DIST_KM of a
-// CONTROL_SOURCE event. It does not enter the z-scores, thresholds or maps.
-var nearWar = distControlKm.lte(ATTRIBUTION_DIST_KM);
-var damageAttrib = damage_primary.and(nearWar).rename('damage_attributed');
-var rewildAttrib = rewild_primary.and(nearWar).rename('rewild_attributed');
-
-var absZ = resMedian.z_score.abs();
-// The ee.Number is wrapped in ee.Image.constant, so the threshold is promoted
-// explicitly.
-var flagStrongZ = absZ.gt(ee.Image.constant(ee.Number(Z_USED).add(1)))
-  .toByte();  // one unit above the working threshold
-var flagNearWar = nearWar.toByte();
 
 // NUMBER OF WARTIME YEARS WITH AN ANOMALY ('confidence' in the names). For
 // each pixel: the number of war years (2022-2024) in which the annual z-score
@@ -1487,8 +1435,6 @@ if (RUN.mainOutputs) {
       'rewild_px': headlineAllValidStats.get('rewild_px'),
       'damage_persist_km2': areaKm2(damagePersist.and(aoi_mask)),
       'rewild_persist_km2': areaKm2(rewildPersist.and(aoi_mask)),
-      'damage_near_war_km2': areaKm2(damageAttrib.and(aoi_mask)),
-      'rewild_near_war_km2': areaKm2(rewildAttrib.and(aoi_mask)),
       'headline_comparison': 'annual_median_vs_annual_median',
       'z_null_sd_factor': MEDIAN_NULL_SD_FACTOR,
       // *_exceedance_km2 = pixels at or beyond the stricter z threshold before
@@ -1533,9 +1479,7 @@ if (RUN.mainOutputs) {
       'damage_px': headlineNovelStats.get('damage_px'),
       'rewild_px': headlineNovelStats.get('rewild_px'),
       'damage_persist_km2': areaKm2(damagePersist.and(eligible_novel)),
-      'rewild_persist_km2': areaKm2(rewildPersist.and(eligible_novel)),
-      'damage_near_war_km2': areaKm2(damageAttrib.and(eligible_novel)),
-      'rewild_near_war_km2': areaKm2(rewildAttrib.and(eligible_novel))
+      'rewild_persist_km2': areaKm2(rewildPersist.and(eligible_novel))
     }),
     ee.Feature(null, {
       'variant': 'quality_screen_without_novelty_sensitivity',
@@ -1550,9 +1494,7 @@ if (RUN.mainOutputs) {
       'damage_px': headlineNoNovelStats.get('damage_px'),
       'rewild_px': headlineNoNovelStats.get('rewild_px'),
       'damage_persist_km2': areaKm2(damagePersist.and(eligible_nonovel)),
-      'rewild_persist_km2': areaKm2(rewildPersist.and(eligible_nonovel)),
-      'damage_near_war_km2': areaKm2(damageAttrib.and(eligible_nonovel)),
-      'rewild_near_war_km2': areaKm2(rewildAttrib.and(eligible_nonovel))
+      'rewild_persist_km2': areaKm2(rewildPersist.and(eligible_nonovel))
     }),
     ee.Feature(null, {
       'variant': 'stricter_no_closing',
@@ -1696,35 +1638,6 @@ if (RUN.areaSensitivity) {
                 'is_main_parameters',
                 'nominal_projected_patch_km2', 'damage_km2', 'rewild_km2',
                 'damage_px', 'rewild_px', 'prewar_share_two_sided']
-  });
-}
-
-// Uses the primary detection masks unchanged; only the proximity radius that
-// links a detected patch to documented events varies.
-if (RUN.areaSensitivity) {
-  var attribRows = ATTRIBUTION_DIST_LIST.map(function(ak) {
-    var near = distControlKm.lte(ak);
-    return ee.Feature(null, {
-      'attribution_dist_km': ak,
-      'is_primary_value': ak === ATTRIBUTION_DIST_KM ? 1 : 0,
-      'damage_attributed_km2': areaKm2(
-        damage_primary.and(near).and(aoi_mask)),
-      'rewild_attributed_km2': areaKm2(
-        rewild_primary.and(near).and(aoi_mask)),
-      'damage_km2_total': areaKm2(damage_primary.and(aoi_mask)),
-      'rewild_km2_total': areaKm2(rewild_primary.and(aoi_mask)),
-      'fraction_eligible_within_radius': pixelCount(
-        near.and(aoi_mask)).divide(ELIGIBLE_PIXEL_COUNT)
-    });
-  });
-  exportTable({
-    collection: ee.FeatureCollection(attribRows),
-    description: 'Areas_vs_AttributionDistance',
-    folder: exportFolder, fileFormat: 'CSV',
-    selectors: ['attribution_dist_km', 'is_primary_value',
-                'damage_attributed_km2', 'rewild_attributed_km2',
-                'damage_km2_total', 'rewild_km2_total',
-                'fraction_eligible_within_radius']
   });
 }
 
@@ -2139,6 +2052,10 @@ if (RUN.landCover) exportTable({
 // 10. MAIN RASTER EXPORTS
 // =====================================================================
 
+// 32 bands. Positions 13-14 and 19-20 held distance-to-event layers in earlier
+// versions of this script. They now hold four layers moved from the end of
+// the stack, so the positions of the other bands (7, 10-12, 21-30) are the
+// same as before.
 if (RUN.mainOutputs) {
   var outputStack = ee.Image.cat([
     prewar.rename('prob_prewar'),  // 01
@@ -2153,14 +2070,15 @@ if (RUN.mainOutputs) {
     resMedian.local_sd,  // 10
     damage_primary.toFloat(),  // 11
     rewild_primary.toFloat(),  // 12
-    damageAttrib.toFloat(),  // 13
-    rewildAttrib.toFloat(),  // 14
+    NULL_MAIN.localSD.rename('local_sd_prewar'),  // 13 unadjusted, floored
+    NULL_MAIN.localSDRaw.rename('local_sd_prewar_unfloored'),  // 14
     damagePersistCount.toFloat(),  // 15
     rewildPersistCount.toFloat(),  // 16
     damagePersist.toFloat(),  // 17
     rewildPersist.toFloat(),  // 18
-    distControlKm,  // 19 control-role events
-    distValidKm,  // 20 distance to VALID_SOURCE (comparison) events
+    resComposite.z_score
+      .rename('zscore_composite'),  // 19 sensitivity
+    aoi_mask.toFloat().rename('mapping_mask'),  // 20
     confidence.toFloat(),  // 21
     lcImage.toFloat(),  // 22
     warSD.rename('prob_war_sd'),  // 23
@@ -2171,15 +2089,10 @@ if (RUN.mainOutputs) {
     wartimeSdAccepted.toFloat(),  // 28 diagnostic only
     eligible_nonovel.toFloat(),  // 29 quality sensitivity
     eligible_novel.toFloat(),  // 30 quality sensitivity
-    resComposite.z_score
-      .rename('zscore_composite'),  // 31 sensitivity
     detComposite.damage
-      .rename('damage_composite').toFloat(),  // 32 sensitivity
+      .rename('damage_composite').toFloat(),  // 31 sensitivity
     detComposite.rewild
-      .rename('rewild_composite').toFloat(),  // 33 sensitivity
-    NULL_MAIN.localSD.rename('local_sd_prewar'),  // 34 unadjusted, floored
-    NULL_MAIN.localSDRaw.rename('local_sd_prewar_unfloored'),  // 35
-    aoi_mask.toFloat().rename('mapping_mask')  // 36
+      .rename('rewild_composite').toFloat()  // 32 sensitivity
   ]).updateMask(aoi_mask).clip(roi).float();
 
   exportImage({
