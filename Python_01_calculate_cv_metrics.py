@@ -2039,7 +2039,7 @@ at 500 trees, minLeafPopulation={FIXED_MIN_LEAF} and
 variablesPerSplit={FIXED_MTRY}: all 64 embedding bands are predictors, and each
 split evaluates a random subset of {FIXED_MTRY} of them (3 for the
 11-predictor environmental baseline, 1 for the NDVI-only model). The NDVI
-predictor is the summer-median Sentinel-2 NDVI (May-September 2019-2021) at
+predictor is the summer-median Sentinel-2 NDVI (June-August 2019-2021) at
 each record location; the other baseline predictors are 500 m values. No CV result
 selects or replaces that setting. A small prespecified diagnostic set compares
 (leaf,mtry) values (5,8), (5,16), (20,8), (20,21) and (50,16) on the same
