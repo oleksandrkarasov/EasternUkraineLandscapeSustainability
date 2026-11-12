@@ -65,7 +65,6 @@ var SCHEMES = {
 var aoi = ee.FeatureCollection(AOI_ASSET);
 var roi = aoi.geometry();
 var refProjection = ee.Projection(EXPORT_CRS, EXPORT_TRANSFORM);
-var modisNdvi = ee.ImageCollection('MODIS/061/MOD13Q1');
 var worldCover = ee.ImageCollection('ESA/WorldCover/v200')
   .filterBounds(roi).mosaic().clip(roi).select('Map').rename('lc');
 var dem = ee.Image('USGS/SRTMGL1_003');
@@ -151,41 +150,11 @@ function prewarEmbedding() {
     .setDefaultProjection(refProjection).toFloat();
 }
 
-function summerNdvi(years) {
-  var startYear = Math.min.apply(null, years);
-  var endYear = Math.max.apply(null, years);
-  var filteredNdvi = modisNdvi
-    .filterBounds(roi)
-    .filterDate(
-      ee.Date.fromYMD(startYear, 1, 1),
-      ee.Date.fromYMD(endYear + 1, 1, 1))
-    .filter(ee.Filter.calendarRange(5, 9, 'month'));
-  var modisProjection = ee.Image(filteredNdvi.first())
-    .select('NDVI').projection();
-  var ndvi = filteredNdvi.map(function (image) {
-      var quality = image.select('SummaryQA').lte(1);
-      return image.select('NDVI').multiply(0.0001)
-        .updateMask(quality).rename('ndvi');
-    }).median()
-    // ImageCollection reductions do not retain a usable default projection.
-    // Restore the native MODIS grid before reduceResolution aggregates 250 m
-    // pixels to the fixed 500 m analysis grid.
-    .setDefaultProjection(modisProjection);
-  // MODIS is 250 m, so a direct 2 x 2 mean is bounded and inexpensive.
-  return ndvi.reduceResolution({
-      reducer: ee.Reducer.mean(), bestEffort: false, maxPixels: 16
-    })
-    .reproject({crs: EXPORT_CRS, crsTransform: EXPORT_TRANSFORM})
-    .rename('ndvi_modis').toFloat();
-}
-
 worldCover = toReferenceGrid(worldCover).toInt16();
 var analysisDomain = worldCover.remap(
   OUTDOOR_CLASSES, OUTDOOR_CLASSES.map(function () { return 1; }), 0
 ).eq(1).rename('analysis_domain');
 var embeddingPrewar = prewarEmbedding()
-  .updateMask(analysisDomain);
-var ndviPrewar = summerNdvi([2019, 2020, 2021])
   .updateMask(analysisDomain);
 
 var LAND_COVER_CLASSES = [10, 20, 30, 80, 90, 100];
@@ -219,12 +188,12 @@ var tpi = elevation.subtract(elevation.focal_mean({
   radius: 3, kernelType: 'square', units: 'pixels'
 })).rename('tpi').toFloat();
 
-// Raster part of the baseline stack. 'ndvi_modis' is sampled for reference
-// only; the baseline models use the point attribute 'ndvi' (see header).
-var BASELINE_BANDS = ['ndvi_modis'].concat(LAND_COVER_BANDS)
+// Raster part of the baseline stack. NDVI is not a raster here: the baseline
+// and NDVI-only models use the point attribute 'ndvi' (see header).
+var BASELINE_BANDS = LAND_COVER_BANDS
   .concat(['dist_water_km', 'elevation', 'slope', 'tpi']);
 var baselineStack = ee.Image.cat([
-  ndviPrewar, landCoverIndicators, distanceToWaterKm, elevation, slope, tpi
+  landCoverIndicators, distanceToWaterKm, elevation, slope, tpi
 ]).updateMask(analysisDomain);
 var embeddingStack = embeddingPrewar.updateMask(analysisDomain);
 var ALL_PREDICTOR_BANDS = MODEL_EMBEDDING_BANDS.concat(BASELINE_BANDS);
