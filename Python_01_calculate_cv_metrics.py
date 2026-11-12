@@ -1022,10 +1022,9 @@ STRATIFIED_MIN_PER_CLASS = 30
 def stratified_performance(raw: pd.DataFrame) -> pd.DataFrame:
     """
 
-    Answers R3-2 at the model level (does performance hold inside the
-    pre-2022 occupation line, where the quasi-peaceful-baseline assumption is
-    weakest?) and the R2 platform-bias question (each platform's presences
-    against the common pseudo-absence background). WorldCover strata expose
+    Performance by stratum: inside and outside the pre-2022 occupation line,
+    and by platform (each platform's presences against the common
+    pseudo-absence background). WorldCover strata expose
     class-specific behaviour inside the training domain. Pure post-processing
     of the pooled out-of-fold scores; no Earth Engine re-run involved.
     """
@@ -2414,7 +2413,7 @@ def main() -> None:
     if not stratified.empty:
         ordlo_rows = stratified[stratified["stratum_type"] == "in_ordlo"]
         if not ordlo_rows.empty:
-            print("\nOut-of-fold AUC by pre-2022 occupation line (R3-2):")
+            print("\nOut-of-fold AUC by pre-2022 occupation line:")
             print(ordlo_rows[[
                 "sampling_scheme", "stratum", "n_presence", "n_absence",
                 "AUC", "Brier_Skill_Score",
