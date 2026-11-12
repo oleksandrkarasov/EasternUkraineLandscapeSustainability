@@ -41,21 +41,12 @@
  event is retained as the cell's representative point; NDVI is never used to
  choose it.
 
- WHAT CHANGED IN THIS VERSION AND WHY
- ------------------------------------
- Every change below is tied to a specific referee comment. Reviewer numbering
- follows the decision letter (R3 = the detailed methodological review,
- R2 = the page-by-page review in Review_comments.pdf).
-
  NOTE ON THE EFFORT COVARIATE WINDOW
      effort_5km counts raw records from the matched 2019-2021 window for both
      classes, because that is the observation window of the main analysis. It
      is therefore only approximately matched for the full 2015-2021 sensitivity
      layer, where some presences predate the effort window. State this if the
      effort covariate is used in the full-window run.
-
- [R2, Page 13 line 6 / Page 20] Control zones and event datasets.
-     Handled in GEE_05 (debiasing), not here.
 
  NOTE ON OUTPUT NAMES
  --------------------
@@ -118,7 +109,7 @@ rng = np.random.default_rng(SEED)
 # authority. Rerunning A1-A3 is required for the corrected attributes.
 METRIC_CRS = "EPSG:3035"
 
-# ---- Reviewer-driven switches ------------------------------------------------
+# ---- Analysis switches --------------------------------------------------------
 
 #   "buffer_both"          : drop points inside the 10 m buffer union (relaxes
 #                            the pseudo-absence rule to match the presences)
@@ -681,10 +672,8 @@ def step_merge():
 
 def step_ordlo_stats():
     """
-    Unchanged in substance. Note for the rebuttal (R2, Page 10): the decline of
-    VK on Ukraine-controlled territory starts with the 2017 ban, not with the
-    full-scale invasion. That is a text change; the figure produced here already
-    shows the 2017 break, so point to it explicitly in the caption.
+    Annual numbers of records and unique users per platform, inside and
+    outside the pre-2022 occupation line (Figures S1-S3).
     """
     print("\n=== STEP 2. ORDLO comparison for the supplement ===")
     layer_config = {"flic": "Flickr", "twitt": "Twitter", "vk": "VK"}
@@ -1238,16 +1227,11 @@ def step_pseudo_absences():
     print("   Candidate pool written: {0} points".format(len(gdf_points)))
 
     # ---- 5f. Four exported layers, one per presence layer -------------------
-    # separable the two classes were under the submitted asymmetric design,
-    # where every presence had NDVI >= 0.5 by construction while the background
-    # was unfiltered.
+    # Share of the candidate pool with NDVI >= MIN_NDVI, written to the audit
+    # table. The layers used in the paper have no NDVI filter.
     frac_pool_green = float((gdf_points["ndvi"] >= MIN_NDVI).mean())
-    print("\n   [R3-7 diagnostic] {0:.1%} of the pseudo-absence pool has "
-          "NDVI >= {1}.".format(frac_pool_green, MIN_NDVI))
-    print("   Under the submitted asymmetric design the remaining {0:.1%} were "
-          "separable".format(1 - frac_pool_green))
-    print("   from EVERY presence on the NDVI threshold alone. Quote this "
-          "figure in the response.")
+    print("\n   {0:.1%} of the pseudo-absence pool has NDVI >= {1}.".format(
+        frac_pool_green, MIN_NDVI))
     audit("ndvi_asymmetry_diagnostic", "pseudo_absences",
           len(gdf_points), int((gdf_points["ndvi"] >= MIN_NDVI).sum()),
           "pool fraction with NDVI >= {0}".format(MIN_NDVI))
