@@ -1,12 +1,12 @@
 # Code for manuscript SUST-D-26-00527 — detailed notes
 
 See `README.md` for the step-by-step run with the shipped synthetic point tables. In this package
-`GEE_02b`, `GEE_06`, `support/Python_reclassify_cumulative_classes.py` and
+`GEE_06`, `support/Python_reclassify_cumulative_classes.py` and
 `tests/` live in `optional_checks/`; `Python_A0_make_mock_training_points.py`
 writes synthetic training points in the format of `Python_A1`. The point tables
 uploaded to Earth Engine are named in `support/folders.py` (`TABLES`).
 
-Code accompanying *"War-related anomalies in outdoor visitation propensity in
+Code accompanying *"Wartime anomalies in outdoor visitation propensity in
 Eastern Ukraine: insights from an Earth observation foundation model and
 social media"* (Sustainability Science).
 
@@ -86,7 +86,6 @@ writes the Drive folder `GEE06_complete_case_audit`, which no script reads.
 | 2 | `Python_A2_match_recurrent_accessibility.py`, `Python_A3_match_nonrecurrent_accessibility.py` | Accessibility-matched pseudo-absences for the recurrent and the regular model: coarsened exact matching on log social-media activity (`log_effort`) and log distance to infrastructure, exact on the pre-2022 occupation line, with balance (SMD ≤ 0.10) and retention (≥ 70% / ≥ 65%) gates. Sensitivity analysis only. (*Accessibility diagnostics*) |
 | 3 | `GEE/GEE_01_create_embedding_composites.js` | Materialises the 64-band annual AlphaEarth embeddings 2019–2024 on a fixed 500 m EPSG:3035 grid. (*Satellite data*) |
 | 4 | `GEE/GEE_02_sample_all_training_tables.js` | Samples the pre-war (2019–2021 median) embeddings and the 11 baseline predictors at all training points; points whose 500 m cell is outside the six-class training domain are dropped. One table per sampling scheme. (*Modelling*) |
-| 4b | `GEE/GEE_02b_check_ndvi_source.js` | One-off, read-only check of tables made before the NDVI-name fix (see below). |
 | 5 | `GEE/GEE_03_cross_validation_and_sensitivities.js` | Five-fold spatially blocked CV of the embedding model, the environmental baseline and the NDVI-only model on identical complete-case rows; repeated block assignments, block-size, random-fold and Random Forest-setting sensitivities; fold audit. Matched schemes keep complete pairs only. Every score row carries `row_id` (feature ID of the sampled table) and a fingerprint of its 64 predictor values; `CV_RowManifest_<scheme>_v13b12` lists the rows of each scheme. |
 | 6 | `GEE/GEE_04_final_probability_products.js` | Fits the final models on the CV complete-case rule and predicts every year 2019–2024 for the whole study area (no land-cover mask); extrapolation flags for the median and all six annual embeddings. Checks: the probability output mode (`SDM_ProbabilityModeCheck_*`), the training rows with `row_id` and fingerprint (`SDM_FullModelPointPredictions_*`), and a labelled reconstruction of the previous (v34) row filters (`SDM_TrainingRowCheck_*`, `SDM_TrainingRowSets_*`). (*Figure 5*) |
 | 7 | `Python_01_calculate_cv_metrics.py` | Table 1 and the model-performance results: AUC, BSS, TSS, sensitivity, specificity, train–test gap; paired t-tests between models (with fold-by-fold differences; folds share training data, so p-values are indicative); NDVI and distance ranking checks; performance by occupation line; residual correlogram and block-size check; covariate balance and pair completeness of the matched schemes on the rows actually evaluated. Final checks: the final-model rows and the main blocked CV scores equal the CV row manifest by `row_id`, label, fingerprint and (scores) held-out fold, and the exported score is the verified label-1 probability (`final_vs_cv_training_rows.csv`); every CV partition of every scheme and model agrees with its manifest in labels, fingerprints, folds, run and score mode, with no row trained on and held out in one fold (`cv_scores_vs_manifest.csv`). Two different copies of one CV export stop the run. One overall verdict, `CV_CHECKS_VERDICT_v13b12.json`, covers all of these; it is removed when a run starts, and `CHECKS_FAILED.txt` stays until a run has passed. Exit status 1 if a check fails. |
@@ -220,10 +219,7 @@ model, and the NDVI in the ranking check, is the summer-median Sentinel-2 NDVI
 (May–September 2019–2021; `Summer_NDVI_Median_2019_2021.tif`) sampled by
 Python_A1 at each record location — the same NDVI that defined the presence
 filter of the submitted version. The other baseline predictors are 500 m
-values. Earlier versions of GEE_02 also carried a MODIS 500 m band named
-`ndvi`; `GEE_02b` confirmed that the point attribute is what the tables hold,
-and the MODIS band is now named `ndvi_modis` (reference only, not a model
-input).
+values.
 
 **Training domain and prediction domain.** WorldCover limits the training
 points only. Final probability and change maps cover every pixel with valid
