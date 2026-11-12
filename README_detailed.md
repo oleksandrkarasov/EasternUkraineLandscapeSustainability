@@ -82,6 +82,7 @@ writes the Drive folder `GEE06_complete_case_audit`, which no script reads.
 
 | Step | Script | What it does (manuscript section) |
 |---|---|---|
+| 0 | `GEE/GEE_00_summer_ndvi.js` | Summer-median Sentinel-2 NDVI raster (June–August 2019–2021, 10 m) that Python_A1 samples at the record locations. Not needed with the shipped synthetic point tables. |
 | 1 | `Python_A1_prepare_presences_and_backgrounds.py` | Merges the Flickr, Twitter and VKontakte records and pseudonymises user IDs; keeps records in six ESA WorldCover classes (10, 20, 30, 80, 90, 100), May–September 2015–2021, outside a 10 m buffer around roads, railways and buildings; thins to one random record per H3 resolution-8 cell (2019–2021 main layer and 2015–2021 sensitivity layer); labels recurrent cells; draws pseudo-absences by the same rules, sampled according to overall social-media activity (target-group background; `effort` in the code). Writes GeoPackages and zipped shapefiles for upload. (*Social media data*) |
 | 2 | `Python_A2_match_recurrent_accessibility.py`, `Python_A3_match_nonrecurrent_accessibility.py` | Accessibility-matched pseudo-absences for the recurrent and the regular model: coarsened exact matching on log social-media activity (`log_effort`) and log distance to infrastructure, exact on the pre-2022 occupation line, with balance (SMD ≤ 0.10) and retention (≥ 70% / ≥ 65%) gates. Sensitivity analysis only. (*Accessibility diagnostics*) |
 | 3 | `GEE/GEE_01_create_embedding_composites.js` | Materialises the 64-band annual AlphaEarth embeddings 2019–2024 on a fixed 500 m EPSG:3035 grid. (*Satellite data*) |
@@ -216,9 +217,9 @@ as a sensitivity only. The simpler models use mtry 3 (11 predictors) and 1
 
 **NDVI.** The NDVI predictor of the environmental baseline and the NDVI-only
 model, and the NDVI in the ranking check, is the summer-median Sentinel-2 NDVI
-(May–September 2019–2021; `Summer_NDVI_Median_2019_2021.tif`) sampled by
-Python_A1 at each record location — the same NDVI that defined the presence
-filter of the submitted version. The other baseline predictors are 500 m
+(June–August 2019–2021; `Summer_NDVI_Median_2019_2021.tif`, made with
+`GEE/GEE_00_summer_ndvi.js`) sampled by Python_A1 at each record location — the
+same NDVI that defined the presence filter of the submitted version. The other baseline predictors are 500 m
 values.
 
 **Training domain and prediction domain.** WorldCover limits the training
