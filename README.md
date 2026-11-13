@@ -26,8 +26,9 @@ run; the Earth Engine exports (steps 3–6 and 8) take most of it.
     (https://acleddata.com/monitor/ukraine-conflict-monitor; free registration;
     the licence does not allow redistribution) and VIINA
     (https://github.com/zhukovyuri/VIINA);
-  - the four ESA WorldCover 2021 tiles covering the area
-    (https://esa-worldcover.org/en/data-access; N45E036, N45E039, N48E036, N48E039).
+  - the five ESA WorldCover 2021 tiles covering the area
+    (https://esa-worldcover.org/en/data-access; N45E036, N45E039, N48E033,
+    N48E036, N48E039).
 
 Everything else is in `data/`: the study area and the pre-2022 occupation area
 as zipped shapefiles ready for Earth Engine (`data/upload_to_GEE/SUSTD_aoi.zip`
