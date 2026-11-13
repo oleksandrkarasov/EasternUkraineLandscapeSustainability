@@ -16,7 +16,8 @@
    data/upload_to_GEE/SUSTD_war_events.zip for upload to Earth Engine.
 2. data/ESA_WorldCover_2021_Ukraine_AOI.tif  from the ESA WorldCover 2021 v200
    tiles covering the study area (https://esa-worldcover.org/en/data-access;
-   tiles N45E036, N45E039, N48E036, N48E039), mosaicked and clipped to the AOI.
+   tiles N45E036, N45E039, N48E033, N48E036, N48E039), mosaicked and clipped to
+   the AOI. The script stops if the tiles do not cover the whole study area.
    Used by support/Python_correlations_with_events.py (dominant land cover per hexagon).
 
 Either part can be run alone by giving only its arguments.
@@ -84,11 +85,35 @@ def build_war_events(acled, viina, aoi_path, out_path):
     print(f"           -> {zip_path} (upload as Earth Engine asset {zip_path.stem})")
 
 
+def missing_worldcover_tiles(aoi_geom, tile_bounds):
+    """Names of the 3-degree WorldCover tiles (south-west corner) that the study
+    area needs and the given files do not cover."""
+    import math
+    from shapely.geometry import box
+    from shapely.ops import unary_union
+    rest = aoi_geom.difference(unary_union([box(*b) for b in tile_bounds]))
+    if rest.is_empty or rest.area < 1e-6:          # square degrees
+        return []
+    minx, miny, maxx, maxy = rest.bounds
+    names = []
+    for lat in range(int(math.floor(miny / 3)) * 3, int(math.ceil(maxy / 3)) * 3, 3):
+        for lon in range(int(math.floor(minx / 3)) * 3, int(math.ceil(maxx / 3)) * 3, 3):
+            if rest.intersection(box(lon, lat, lon + 3, lat + 3)).area >= 1e-6:
+                names.append("{0}{1:02d}{2}{3:03d}".format(
+                    "N" if lat >= 0 else "S", abs(lat), "E" if lon >= 0 else "W", abs(lon)))
+    return names
+
+
 def build_worldcover(tiles, aoi_path, out_path):
     import rasterio
     from rasterio.merge import merge
     from rasterio.mask import mask
     srcs = [rasterio.open(t) for t in tiles]
+    aoi_ll = gpd.read_file(f"zip://{aoi_path}" if str(aoi_path).endswith(".zip") else aoi_path).to_crs(srcs[0].crs)
+    aoi_geom = aoi_ll.geometry.union_all() if hasattr(aoi_ll.geometry, "union_all") else aoi_ll.geometry.unary_union
+    missing = missing_worldcover_tiles(aoi_geom, [tuple(s.bounds) for s in srcs])
+    if missing:
+        raise SystemExit("The WorldCover tiles do not cover the whole study area. Missing: " + ", ".join(missing))
     mosaic, transform = merge(srcs)
     meta = srcs[0].meta.copy()
     meta.update(height=mosaic.shape[1], width=mosaic.shape[2], transform=transform, compress="lzw")
