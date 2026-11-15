@@ -89,14 +89,19 @@ writes one table asset per model (`SUSTD_SDM_Sampled_all_<scheme>_outdoor_v13b`)
 
 **5. `GEE/GEE_03_cross_validation_and_sensitivities.js`** — about 40 tasks;
 out-of-fold scores of the embedding, environmental-baseline and NDVI-only
-models for all schemes and settings → Drive folder `GEE03_cross_validation`.
-Download it into `outputs/GEE03_cross_validation/`.
+models for all schemes and settings → Drive folder `GEE03_cross_validation_<start time>`.
+Download it and extract its files into `gee_exports/GEE03_cross_validation/`.
+
+Every run of a GEE script exports to a new Drive folder named after the step
+and the start time of the run, and prints that name. Extract one complete run
+into each local step folder; `python support/folders.py` creates the folders.
 
 **6. `GEE/GEE_04_final_probability_products.js`** — final models; annual and
 period propensity maps (Figure 5; Table S3 files), extrapolation flags,
 variable importance (Table S9), land-cover sample (Table S8) → Drive folder
-`GEE04_final_models`; also assets `SUSTD_SDM_Probability_*`, `SUSTD_SDM_Novelty_*`
-read by GEE_05. Download the folder into `outputs/GEE04_final_models/`.
+`GEE04_final_models_<start time>`; also assets `SUSTD_SDM_Probability_*`,
+`SUSTD_SDM_Novelty_*` read by GEE_05. Extract the folder into
+`gee_exports/GEE04_final_models/`.
 
 **7. `python Python_01_calculate_cv_metrics.py`** — Table 2; Table S2a–d;
 Table S9; Figure S5; the matching and co-location counts of Table S1
@@ -104,12 +109,14 @@ Table S9; Figure S5; the matching and co-location counts of Table S1
 
 **8. `GEE/GEE_05_debiased_change_detection.js`, twice** — set
 `CHANGE_SCHEME = 'primary_effort'` (regular visitation; Drive folder
-`GEE05_regular`), run, then `'recurrent_effort'` (`GEE05_recurrent`). Produces
+`GEE05_regular_<start time>`), run, then `'recurrent_effort'`
+(`GEE05_recurrent_<start time>`). Produces
 the z-score and year-count rasters (Figures 6–7, S7, S9; Table S4 files), all
 areas (Table S6), the sensitivity analyses (Table S5), the areas without the
 pixels flagged by the extrapolation check (Figure S8) and the pre-war z-score
-sample (Figure S6). Download both folders
-into `outputs/GEE05_regular/` and `outputs/GEE05_recurrent/`.
+sample (Figure S6). Extract the two folders into `gee_exports/GEE05_regular/`
+and `gee_exports/GEE05_recurrent/`. All tables of one model must come from one
+run; start all tasks of the run.
 
 **9. `python Python_02_run_change_postprocessing.py`** — runs the four
 `support/` steps: baseline-representation sensitivity (Table S5d), pre-war
@@ -120,6 +127,8 @@ and Figure 8 → `outputs/Python02_hexagons_regular/`, `.../_recurrent/`.
 **10. `python Python_03_collect_manuscript_numbers.py`** — every
 change-detection number of the Results and SI in one table
 (`manuscript_numbers_*.csv`) with consistency checks → `outputs/Python03_manuscript_numbers/`.
+With `--models primary_effort` (or `recurrent_effort`) it collects and checks one
+model only and names the files after it.
 
 **11. `python support/Python_plot_supplementary_figures.py`** — Figures S5–S9
 and `raster_area_check.csv` (areas recomputed from the GeoTIFFs against the
@@ -133,7 +142,9 @@ the Dynamic World land-cover product, loaded directly in QGIS).
 
 `Python_A1_prepare_presences_and_backgrounds.py` turned the Flickr, Twitter, and
 VKontakte records into presences and pseudo-absences (Methods "Social media
-data"; Table S1; Figures S1–S3); `Python_A2`/`A3` built the accessibility-matched
+data"; Table S1); `Python_A1b_social_media_counts_until_2021.py` drew Figures S1–S3
+and counted the first rows of Table S1 from the records dated up to 2021;
+`Python_A2`/`A3` built the accessibility-matched
 samples (Text S1). They document the preprocessing but cannot be run without
 the records. `Python_A0_make_mock_training_points.py` produced the ten synthetic
 tables in `data/mock_points/` (it calls `Python_A3` and `Python_A2` for the four
